@@ -28,10 +28,43 @@ Scrapex/
 │   ├── Text_Representation.py
 │   ├── Visualization.py
 │   └── requirements.txt
-└── main.py 
+└── main.py 
 ```
 
 ## Installation and Setup
+1. Clone the repository:
+   ```sh
+   git clone https://github.com/HeyItzAine/Scrapex.git
+   cd scrapex
+   ```
+2. Install dependencies:
+   ```sh
+   pip install -r requirements.txt
+   ```
+
+## Usage
+Run the full pipeline:
+```sh
+python main.py
+```
+
+### Individual Scripts
+- **Web Scraping**:
+  ```sh
+  python scrapex.py --query "machine learning OR artificial intelligence" --pages 10 --output "data/research_titles.csv"
+  ```
+- **Data Cleaning**:
+  ```sh
+  python cleaner.py --input "data/research_titles.csv" --output "data/cleaned_titles.csv"
+  ```
+- **Data Analysis**:
+  ```sh
+  python analyzer.py --input "data/cleaned_titles.csv"
+  ```
+- **Text Representation**:
+  ```sh
+  python text_representation.py
+  ```
 
 ### Prerequisites
 Ensure you have the following installed:
@@ -54,52 +87,50 @@ pip install -r requirements.txt
 
 ## Scripts Overview
 
-### 1. `Scrapex.py` (Web Scraper)
-The `Scrapex.py` script is responsible for automating data extraction from Google Scholar. It works by launching a Chrome browser instance using Selenium, searching for research papers using a broad query, and extracting titles from multiple pages.
+### 1. `scrapex.py` (Web Scraper)
+The `scrapex.py` script automates data extraction from Google Scholar using Requests and BeautifulSoup.
 
 - **How it Works:**
-  1. Initiates a Selenium WebDriver session.
-  2. Navigates to Google Scholar and searches for research-related terms.
-  3. Parses the HTML content using BeautifulSoup to extract paper titles.
-  4. Implements user-agent rotation and random delays to prevent detection.
-  5. Iterates through multiple pages using pagination.
-  6. Saves the extracted data in `Data/research_titles.csv`.
+  1. Sends HTTP requests to Google Scholar using randomized user agents.
+  2. Parses the HTML content with BeautifulSoup to extract research paper titles and authors.
+  3. Implements random delays and user-agent rotation to reduce detection risk.
+  4. Iterates through multiple pages using pagination.
+  5. Saves the extracted data in `Data/research_titles.csv`.
 
 #### Basic Usage:
-```bash
-python Scripts/Scrapex.py
+```sh
+python Scripts/scrapex.py
 ```
 
 #### Advanced Usage:
-```bash
-python Scripts/Scrapex.py --output "../Data/custom_output.csv" --pages 10 --query "machine learning OR artificial intelligence" --headless
+```sh
+python Scripts/scrapex.py --output "../Data/custom_output.csv" --pages 10 --query "machine learning OR artificial intelligence"
 ```
 
 **Advanced Options:**
 - `--output`: Specify a custom output file path (default: `../Data/research_titles.csv`)
 - `--pages`: Set the maximum number of pages to scrape (default: 5)
 - `--query`: Define a custom search query (default: "research OR study OR thesis OR review OR paper")
-- `--headless`: Run Chrome in headless mode without UI (default: True)
 
-### 2. `Cleaner.py` (Data Cleaning Script)
-The `Cleaner.py` script processes the raw research titles extracted by `Scrapex.py`. It uses NLP techniques to clean and standardize the text, making it more suitable for analysis.
+### 2. `cleaner.py` (Data Cleaning Script)
+The `cleaner.py` script processes the raw research titles extracted by `scrapex.py`. It uses NLP techniques to clean and standardize the text, making it more suitable for analysis.
 
 - **How it Works:**
   1. Loads the raw CSV file (`research_titles.csv`).
   2. Tokenizes the text into individual words.
   3. Removes common stopwords and unwanted characters.
   4. Applies lemmatization to normalize words.
-  5. Fixes character encoding issues (e.g., `â€œ` instead of `"`).
+  5. Fixes character encoding issues.
   6. Saves the cleaned data to `Data/research_titles_cleaned.csv`.
 
 #### Basic Usage:
-```bash
-python Scripts/Cleaner.py
+```sh
+python Scripts/cleaner.py
 ```
 
 #### Advanced Usage:
-```bash
-python Scripts/Cleaner.py --input "../Data/custom_data.csv" --output "../Data/custom_data_cleaned.csv" --language "spanish"
+```sh
+python Scripts/cleaner.py --input "../Data/custom_data.csv" --output "../Data/custom_data_cleaned.csv" --language "spanish"
 ```
 
 **Advanced Options:**
@@ -110,13 +141,15 @@ python Scripts/Cleaner.py --input "../Data/custom_data.csv" --output "../Data/cu
 ## Tools & Technologies
 This project integrates various tools and technologies to facilitate data processing, model training, and deployment:
 
-- Web Scraping: BeautifulSoup, Selenium, Requests (for extracting titles from Google Scholar).
+- Web Scraping: Requests, BeautifulSoup (for extracting titles from Google Scholar).
 - Text Processing: NLTK (for tokenization, stopword removal, and text cleaning).
+- Machine Learning: Scikit-learn, Transformers, Torch (for text analysis and modeling).
+- Data Visualization: Matplotlib, WordCloud.
 
 ## Key Features
-- Automated web scraping of research titles from Google Scholar.
+- Automated web scraping of research titles from Google Scholar using Requests and BeautifulSoup.
 - Preprocessing pipeline for text cleaning and transformation.
-
+- Keyword-based research analysis.
 
 ## Future Features
 - Topic Modeling:
