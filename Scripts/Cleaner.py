@@ -30,7 +30,7 @@ class DataCleaner:
             output_file (str): Path to the output CSV file (default: None)
             language (str): Language for stopwords and lemmatization (default: 'english')
         """
-        self.input_file = input_file
+        self.input_file = input_file    
         
         # If no output file is specified, create one with "_cleaned" suffix
         if output_file is None:

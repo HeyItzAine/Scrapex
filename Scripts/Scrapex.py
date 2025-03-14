@@ -6,6 +6,7 @@ import unicodedata
 import requests
 from bs4 import BeautifulSoup
 import logging
+import concurrent.futures
 
 # Configure logging
 logging.basicConfig(
@@ -15,7 +16,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class GoogleScholarScraperRequests:
-    """A class to scrape research paper titles from Google Scholar using requests."""
+    """A class to scrape research paper titles from Google Scholar using requests with multithreading."""
     
     def __init__(self, 
                  user_agents=None, 
@@ -26,10 +27,10 @@ class GoogleScholarScraperRequests:
         Initialize the scraper.
         
         Args:
-            user_agents (list): List of user agents to rotate through
-            output_file (str): Path to the output CSV file
-            max_pages (int): Maximum number of pages to scrape
-            delay_range (tuple): Range for random delay between requests
+            user_agents (list): List of user agents to rotate through.
+            output_file (str): Path to the output CSV file.
+            max_pages (int): Maximum number of pages to scrape.
+            delay_range (tuple): Range for random delay between requests.
         """
         self.output_file = output_file
         self.max_pages = max_pages
@@ -42,9 +43,8 @@ class GoogleScholarScraperRequests:
             'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36'
         ]
         
-        # Initialize collected titles list and a requests session
+        # Initialize collected titles list
         self.collected_titles = []
-        self.session = requests.Session()
     
     def random_delay(self):
         """Sleep for a random amount of time."""
@@ -57,10 +57,10 @@ class GoogleScholarScraperRequests:
         Extract research titles from HTML content using BeautifulSoup.
         
         Args:
-            html_content (str): HTML content from the page
+            html_content (str): HTML content from the page.
             
         Returns:
-            list: List of extracted titles
+            list: List of extracted titles.
         """
         soup = BeautifulSoup(html_content, 'html.parser')
         titles = []
@@ -100,64 +100,75 @@ class GoogleScholarScraperRequests:
             logger.error(f"Error saving to CSV: {e}")
             raise
     
-    def scrape(self, broad_query="research OR review OR paper"):
+    def fetch_page(self, page_number, base_url):
         """
-        Main method to scrape Google Scholar for research titles.
+        Fetch a single page and extract research titles.
         
         Args:
-            broad_query (str): A broad query to use for getting results
+            page_number (int): The page index (0-indexed).
+            base_url (str): The base URL for the query.
+        
+        Returns:
+            list: List of research titles from the page.
+        """
+        if page_number == 0:
+            url = base_url
+        else:
+            url = f"{base_url}&start={page_number * 10}"
+        
+        headers = {"User-Agent": random.choice(self.user_agents)}
+        logger.info(f"Fetching page {page_number + 1}: {url}")
+        try:
+            response = requests.get(url, headers=headers, timeout=10)
+            if response.status_code != 200:
+                logger.warning(f"Non-200 status code received on page {page_number + 1}: {response.status_code}")
+                return []
+        except requests.RequestException as e:
+            logger.error(f"Request failed on page {page_number + 1}: {e}")
+            return []
+        
+        # Optionally, add a delay after fetching the page to mimic human behavior
+        self.random_delay()
+        return self.extract_titles(response.text)
+    
+    def scrape(self, broad_query="research OR review OR paper"):
+        """
+        Main method to scrape Google Scholar for research titles using multithreading.
+        
+        Args:
+            broad_query (str): A broad query to use for getting results.
             
         Returns:
-            list: List of collected research titles
+            list: List of collected research titles.
         """
         # Format the query for the URL
         formatted_query = broad_query.replace(' ', '+')
         base_url = f"https://scholar.google.com/scholar?q={formatted_query}"
         
-        titles_count = 0
-        current_page = 0
-        
-        while current_page < self.max_pages:
-            if current_page == 0:
-                url = base_url
-            else:
-                url = f"{base_url}&start={current_page * 10}"
-            
-            headers = {
-                "User-Agent": random.choice(self.user_agents)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_pages) as executor:
+            # Submit tasks for each page concurrently
+            future_to_page = {
+                executor.submit(self.fetch_page, page_number, base_url): page_number 
+                for page_number in range(self.max_pages)
             }
-            
-            logger.info(f"Fetching page {current_page + 1}: {url}")
-            try:
-                response = self.session.get(url, headers=headers, timeout=10)
-                if response.status_code != 200:
-                    logger.warning(f"Non-200 status code received: {response.status_code}")
-                    break
-            except requests.RequestException as e:
-                logger.error(f"Request failed: {e}")
-                break
-            
-            page_titles = self.extract_titles(response.text)
-            
-            if not page_titles:
-                logger.warning("No titles found on this page. Possibly blocked or reached the end.")
-                break
-            
-            self.collected_titles.extend(page_titles)
-            titles_count += len(page_titles)
-            logger.info(f"Extracted {len(page_titles)} titles from page {current_page + 1}. Total: {titles_count}")
-            
-            current_page += 1
-            
-            # Random delay to avoid detection
-            self.random_delay()
+            for future in concurrent.futures.as_completed(future_to_page):
+                page_number = future_to_page[future]
+                try:
+                    page_titles = future.result()
+                    if not page_titles:
+                        logger.warning(f"No titles found on page {page_number + 1}. It may have been blocked or reached the end.")
+                    else:
+                        logger.info(f"Extracted {len(page_titles)} titles from page {page_number + 1}")
+                    self.collected_titles.extend(page_titles)
+                except Exception as exc:
+                    logger.error(f"Page {page_number + 1} generated an exception: {exc}")
         
         # Save results to CSV
         self.save_to_csv()
         return self.collected_titles
 
 def main():
-    parser = argparse.ArgumentParser(description='Scrape research paper titles from Google Scholar using requests')
+    parser = argparse.ArgumentParser(description='Scrape research paper titles from Google Scholar using requests with multithreading')
     parser.add_argument('--output', type=str, default='../Data/research_titles.csv',
                         help='Output CSV file path')
     parser.add_argument('--pages', type=int, default=5,
