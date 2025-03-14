@@ -4,12 +4,11 @@ import pandas as pd
 import nltk
 import string
 import csv
+import re
+import logging
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
-import logging
-import nltk
-nltk.download('punkt_tab')
 
 # Configure logging
 logging.basicConfig(
@@ -19,7 +18,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class DataCleaner:
-    """A class to clean research paper titles using NLP techniques."""
+    """A class to clean research paper titles using NLP and authors using regex."""
     
     def __init__(self, input_file, output_file=None, language='english'):
         """
@@ -30,7 +29,7 @@ class DataCleaner:
             output_file (str): Path to the output CSV file (default: None)
             language (str): Language for stopwords and lemmatization (default: 'english')
         """
-        self.input_file = input_file    
+        self.input_file = input_file
         
         # If no output file is specified, create one with "_cleaned" suffix
         if output_file is None:
@@ -38,7 +37,7 @@ class DataCleaner:
             self.output_file = f"{base}_cleaned{ext}"
         else:
             self.output_file = output_file
-            
+        
         self.language = language
         
         # Download necessary NLTK resources if not already downloaded
@@ -61,13 +60,13 @@ class DataCleaner:
             nltk.download('stopwords')
             nltk.download('wordnet')
     
-    def clean_text(self, text):
+    def clean_title(self, text):
         """
         Clean a single text string using NLP techniques.
         
         Args:
             text (str): Input text to clean
-            
+        
         Returns:
             str: Cleaned text
         """
@@ -89,6 +88,22 @@ class DataCleaner:
         
         return clean_text
     
+    def clean_authors(self, text):
+        """
+        Clean the authors' names using regex.
+        
+        Args:
+            text (str): Input author string
+        
+        Returns:
+            str: Cleaned author names
+        """
+        # Remove journal names, extra text, and trailing commas
+        text = re.sub(r",?\s*-\s*[^,]+", "", text)  # Remove text after a dash
+        text = re.sub(r"\.{2,}", "", text)  # Remove excessive periods
+        text = re.sub(r"\s+", " ", text).strip()  # Normalize spaces
+        return text
+    
     def process_csv(self):
         """
         Read the input CSV, clean the data, and write to the output CSV.
@@ -101,19 +116,20 @@ class DataCleaner:
             logger.info(f"Reading data from {self.input_file}")
             df = pd.read_csv(self.input_file)
             
-            # Check if 'Title' column exists
-            if 'Title' not in df.columns:
-                raise ValueError(f"Input CSV must contain a 'Title' column. Found columns: {df.columns.tolist()}")
+            # Check if required columns exist
+            if 'Title' not in df.columns or 'Authors' not in df.columns:
+                raise ValueError(f"Input CSV must contain 'Title' and 'Authors' columns. Found: {df.columns.tolist()}")
             
-            # Apply cleaning to Title column
-            logger.info("Cleaning titles...")
-            df['CleanedTitle'] = df['Title'].apply(self.clean_text)
+            # Apply cleaning functions
+            logger.info("Cleaning titles and authors...")
+            df['CleanedTitle'] = df['Title'].apply(self.clean_title)
+            df['CleanedAuthors'] = df['Authors'].apply(self.clean_authors)
             
             # Write cleaned data to output file
             logger.info(f"Writing cleaned data to {self.output_file}")
             df.to_csv(self.output_file, index=False, quoting=csv.QUOTE_ALL)
             
-            logger.info(f"Successfully cleaned {len(df)} titles")
+            logger.info(f"Successfully cleaned {len(df)} records")
             return df
             
         except Exception as e:
@@ -121,7 +137,7 @@ class DataCleaner:
             raise
 
 def main():
-    parser = argparse.ArgumentParser(description='Clean research paper titles using NLP techniques')
+    parser = argparse.ArgumentParser(description='Clean research paper titles using NLP and authors using regex')
     parser.add_argument('--input', type=str, default='../Data/research_titles.csv',
                         help='Input CSV file path')
     parser.add_argument('--output', type=str, default=None,
