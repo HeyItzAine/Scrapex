@@ -18,13 +18,17 @@ Storage: The scraped data is stored in Data/ before preprocessing
 ```
 Scrapex/
 ├── Data/
-│   ├── research_titles.csv              # Raw scraped research paper titles
-│   ├── research_titles_cleaned.csv      # Cleaned version of the titles
-├── README.md                            # Project documentation
-└── Scripts/
-    ├── Scrapex.py                       # Web scraping script
-    ├── Cleaner.py                       # Data cleaning script
-    └── requirements.txt                 # List of dependencies
+│   ├── research_titles.csv
+│   └── research_titles_cleaned.csv
+├── README.md
+├── Scripts/
+│   ├── Cleaner.py
+│   ├── Pandas_Analysis.py
+│   ├── Scrapex.py
+│   ├── Text_Representation.py
+│   ├── Visualization.py
+│   └── requirements.txt
+└── main.py 
 ```
 
 ## Installation and Setup
