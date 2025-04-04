@@ -4,7 +4,7 @@ nltk==3.9.1
 pandas==2.2.3
 requests==2.32.3
 scikit_learn==1.6.1
-torch==2.5.1+cu121
+torch==2.5.1
 transformers==4.49.0
 wordcloud==1.9.4
 fastapi==0.110.0
