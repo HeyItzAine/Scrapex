@@ -7,6 +7,7 @@ import requests
 from bs4 import BeautifulSoup
 import logging
 import concurrent.futures
+import os
 
 # Configure logging
 logging.basicConfig(
@@ -136,10 +137,18 @@ class GoogleScholarScraperRequests:
         return self.collected_papers
 
 
+
 def main():
     parser = argparse.ArgumentParser(description='Scrape research paper titles and authors from Google Scholar using requests with multithreading')
-    parser.add_argument('--output', type=str, default='../Data/research_titles.csv',
-                        help='Output CSV file path')
+    # Dynamically find the Data/ directory
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Go up from Scripts/
+    DATA_DIR = os.path.join(BASE_DIR, "Data")  # Points to Scrapex/Data
+
+    # Ensure the Data directory exists
+    os.makedirs(DATA_DIR, exist_ok=True)
+
+    parser.add_argument('--output', type=str, default=os.path.join(DATA_DIR, "research_titles.csv"))
+
     parser.add_argument('--pages', type=int, default=5,
                         help='Maximum number of pages to scrape')
     parser.add_argument('--query', type=str, 
