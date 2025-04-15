@@ -115,35 +115,36 @@ class DataCleaner:
             # Read the CSV file
             logger.info(f"Reading data from {self.input_file}")
             df = pd.read_csv(self.input_file)
-            
-            # Check if required columns exist
+
+            # Always clean Title and Authors
             if 'Title' not in df.columns or 'Authors' not in df.columns:
                 raise ValueError(f"Input CSV must contain 'Title' and 'Authors' columns. Found: {df.columns.tolist()}")
             
-            # Apply cleaning functions
             logger.info("Cleaning titles and authors...")
             df['CleanedTitle'] = df['Title'].apply(self.clean_title)
             df['CleanedAuthors'] = df['Authors'].apply(self.clean_authors)
-            
-            # Write cleaned data to output file
+
+            # Optionally clean Abstract
+            if 'Abstract' in df.columns:
+                logger.info("Cleaning abstracts...")
+                df['CleanedAbstract'] = df['Abstract'].fillna("").apply(self.clean_title)
+
+            # Write to output file
             logger.info(f"Writing cleaned data to {self.output_file}")
             df.to_csv(self.output_file, index=False, quoting=csv.QUOTE_ALL)
-            
+
             logger.info(f"Successfully cleaned {len(df)} records")
             return df
-            
+
         except Exception as e:
             logger.error(f"Error during data cleaning: {e}")
             raise
 
 def main():
     parser = argparse.ArgumentParser(description='Clean research paper titles using NLP and authors using regex')
-    parser.add_argument('--input', type=str, default='../Data/research_titles.csv',
-                        help='Input CSV file path')
-    parser.add_argument('--output', type=str, default=None,
-                        help='Output CSV file path (default: input_cleaned.csv)')
-    parser.add_argument('--language', type=str, default='english',
-                        help='Language for NLP processing')
+    parser.add_argument('--input', type=str, required=True, help='Input CSV file path')
+    parser.add_argument('--output', type=str, default=None, help='Output CSV file path (default: input_cleaned.csv)')
+    parser.add_argument('--language', type=str, default='english', help='Language for NLP processing')
     
     args = parser.parse_args()
     

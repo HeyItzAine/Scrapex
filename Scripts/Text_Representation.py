@@ -25,5 +25,9 @@ def compute_bert_embeddings(input_file):
     print("BERT Embeddings Shape:", embeddings.shape)
 
 if __name__ == "__main__":
-    compute_tfidf("../Data/cleaned_data.csv")
-    compute_bert_embeddings("../Data/cleaned_data.csv")
+    print("Computing TF-IDF of google scholar titles...")
+    compute_tfidf("Data/research_titles_cleaned.csv")
+    compute_bert_embeddings("Data/research_titles_cleaned.csv")
+    print("Computing TF-IDF of semantic titles...")
+    compute_tfidf("Data/semantic_titles_cleaned.csv")
+    compute_bert_embeddings("Data/semantic_titles_cleaned.csv")

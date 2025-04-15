@@ -14,4 +14,5 @@ def generate_wordcloud(input_file):
     plt.show()
 
 if __name__ == "__main__":
-    generate_wordcloud("../Data/cleaned_data.csv")
+    generate_wordcloud("Data/research_titles_cleaned.csv")
+    generate_wordcloud("Data/semantic_titles_cleaned.csv")
