@@ -1,8 +1,8 @@
 # Scrapex
 
-Scrapex is a machine learning and web scraping project designed to automate the extraction, cleaning, and analysis of research paper titles from Google Scholar. Using Selenium and BeautifulSoup, the project collects academic research titles, processes the text with NLP techniques, and stores the structured data for further analysis.
+Scrapex is a machine learning and web scraping project designed to automate the extraction, cleaning, and analysis of research paper titles from Google Scholar. Using FastAPI, Requests, and BeautifulSoup, Scrapex collects academic research titles, processes the text with NLP techniques, and provides an API for accessing the data.
 
-A key feature of Scrapex is its topic modeling capability, which applies machine learning algorithms to uncover hidden themes within the collected corpus. Following MLOps principles, the project ensures a structured workflow for data collection, preprocessing, model training, and result analysis. By providing a scalable and reproducible pipeline, Scrapex helps researchers and institutions efficiently categorize research topics and gain deeper insights into academic trends.
+A key feature of Scrapex is its **topic modeling capability**, applying ML algorithms to uncover hidden themes in the collected corpus. Following **MLOps principles**, Scrapex ensures a structured workflow for **data collection, preprocessing, model training, and deployment** via **Docker**.
 
 ## Data Sources
 The data for this project is collected through web scraping from Google Scholar, focusing solely on research titles. These titles serve as input for topic modeling to identify recurring themes in academic research.
@@ -14,21 +14,24 @@ Collected Data: Research titles
 Storage: The scraped data is stored in Data/ before preprocessing
 
 ## Project Structure
-
 ```
 Scrapex/
 ├── Data/
 │   ├── research_titles.csv
 │   └── research_titles_cleaned.csv
+├── Dockerfile
 ├── README.md
 ├── Scripts/
 │   ├── Cleaner.py
 │   ├── Pandas_Analysis.py
+│   ├── Result_Service.py
 │   ├── Scrapex.py
+│   ├── Scraping_Service.py
 │   ├── Text_Representation.py
 │   ├── Visualization.py
 │   └── requirements.txt
-└── main.py 
+├── docker-compose.yml
+└── main.py
 ```
 
 ## Installation and Setup
@@ -46,6 +49,56 @@ Scrapex/
 Run the full pipeline:
 ```sh
 python main.py
+```
+
+## Running the FastAPI Server
+
+Scrapex now includes an **API for fetching, searching, and analyzing scraped research titles**.
+
+### 1. Start the FastAPI Server
+```sh
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+The server provides two main endpoints:
+- `/start-scraping/` - Triggers the scraping process in the background
+- `/scraped-data/` - Returns the cleaned research data in JSON format
+
+### 2. API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/start-scraping/` | Start a new web scraping job in the background |
+| `GET` | `/scraped-data/` | Get all scraped and cleaned research papers |
+
+### 3. Access the API Docs
+
+Once the FastAPI server is running, open:
+- **Swagger UI**: http://localhost:8000/docs
+- **Redoc UI**: http://localhost:8000/redoc
+
+## Running Scrapex with Docker
+
+Scrapex is containerized using **Docker**, ensuring easy deployment and reproducibility.
+
+### 1. Build the Docker Image
+```sh
+docker build -t scrapex .
+```
+
+### 2. Run the Docker Container
+```sh
+docker run -p 8000:8000 scrapex
+```
+
+This will:
+* Start the **FastAPI API** inside the container
+* Scrape and store research titles
+* Expose the API at http://localhost:8000
+
+### 3. Run with Docker Compose
+```sh
+docker-compose up
 ```
 
 ### Individual Scripts
@@ -145,11 +198,14 @@ This project integrates various tools and technologies to facilitate data proces
 - Text Processing: NLTK (for tokenization, stopword removal, and text cleaning).
 - Machine Learning: Scikit-learn, Transformers, Torch (for text analysis and modeling).
 - Data Visualization: Matplotlib, WordCloud.
+- Docker Containerization
+- FastAPI
 
 ## Key Features
-- Automated web scraping of research titles from Google Scholar using Requests and BeautifulSoup.
-- Preprocessing pipeline for text cleaning and transformation.
-- Keyword-based research analysis.
+- Automated web scraping of research titles from Google Scholar  
+- FastAPI-powered API for querying scraped data  
+- Docker containerization for easy deployment  
+- Text cleaning & NLP preprocessing  
 
 ## Future Features
 - Topic Modeling:
