@@ -18,19 +18,30 @@ Storage: The scraped data is stored in Data/ before preprocessing
 Scrapex/
 ├── Data/
 │   ├── research_titles.csv
-│   └── research_titles_cleaned.csv
+│   ├── research_titles_cleaned.csv
+│   ├── semantic_titles.csv
+│   └── semantic_titles_cleaned.csv
 ├── Dockerfile
 ├── README.md
 ├── Scripts/
+│   ├── BERTopic.py
 │   ├── Cleaner.py
+│   ├── Converter.py
 │   ├── Pandas_Analysis.py
 │   ├── Result_Service.py
 │   ├── Scrapex.py
 │   ├── Scraping_Service.py
+│   ├── Semantic_Scrapex.py
 │   ├── Text_Representation.py
 │   ├── Visualization.py
+│   ├── mlflow_example.py
+│   ├── mlflow_experiment.py
+│   ├── scrapex_mlflow_simple.py
 │   └── requirements.txt
 ├── docker-compose.yml
+├── mlruns/
+├── research_titles_cleaned_BERTopic/
+├── semantic_titles_cleaned_BERTopic/
 └── main.py
 ```
 
@@ -191,6 +202,74 @@ python Scripts/cleaner.py --input "../Data/custom_data.csv" --output "../Data/cu
 - `--output`: Define a custom output file path (default: `[input_name]_cleaned.csv`)
 - `--language`: Set the language for NLP processing (default: "english")
 
+### 3. `BERTopic.py` (Topic Modeling)
+The `BERTopic.py` script applies topic modeling to cleaned research titles using BERTopic, a transformer-based topic modeling technique.
+
+- **How it Works:**
+  1. Loads the cleaned titles from CSV files.
+  2. Creates a BERTopic model with specified parameters.
+  3. Transforms text data into topics.
+  4. Generates human-readable topic names.
+  5. Saves the model, topics, and visualizations.
+
+#### Basic Usage:
+```sh
+python Scripts/BERTopic.py Data/research_titles_cleaned.csv all
+```
+
+#### Advanced Options:
+- First argument: Path to the cleaned CSV file
+- Second argument: Topic query (use "all" for all topics or specific topic number)
+
+## MLflow Experiment Tracking
+
+Scrapex now integrates MLflow for experiment tracking, model versioning, and results visualization. This feature helps monitor and compare machine learning experiments, ensuring reproducibility and easier model management.
+
+### 1. MLflow Integration
+
+The project includes several scripts for MLflow tracking:
+
+- **`scrapex_mlflow_simple.py`**: Performs text clustering on research titles using TF-IDF and K-means while tracking parameters, metrics, and artifacts.
+- **`mlflow_experiment.py`**: A unified runner for different ML experiments with MLflow tracking.
+- **`mlflow_example.py`**: An example using Random Forest on Iris dataset to demonstrate MLflow capabilities.
+
+### 2. Tracked Components
+
+- **Parameters**: Feature counts, clustering parameters, model configurations
+- **Metrics**: Silhouette scores, cluster sizes, vocabulary statistics
+- **Artifacts**: Cluster visualizations, model files, result CSVs
+
+### 3. Running MLflow Experiments
+
+To run the text clustering with MLflow tracking:
+
+```sh
+python Scripts/scrapex_mlflow_simple.py
+```
+
+This will:
+1. Process both research and semantic titles
+2. Perform TF-IDF vectorization
+3. Apply K-means clustering with optimal cluster determination
+4. Track all parameters, metrics, and results in MLflow
+
+### 4. Viewing MLflow UI
+
+To view experiment results and comparisons:
+
+```sh
+mlflow ui
+```
+
+Then open http://localhost:5000 in your browser to access the MLflow interface.
+
+### 5. MLflow UI Features
+
+- **Experiments List**: See all tracked experiments
+- **Run Details**: View parameters, metrics, and artifacts for each run
+- **Metrics Comparison**: Compare results across different runs
+- **Artifacts Viewer**: Visualize and download experiment outputs
+
 ## Tools & Technologies
 This project integrates various tools and technologies to facilitate data processing, model training, and deployment:
 
@@ -200,12 +279,16 @@ This project integrates various tools and technologies to facilitate data proces
 - Data Visualization: Matplotlib, WordCloud.
 - Docker Containerization
 - FastAPI
+- Experiment Tracking: MLflow (for tracking machine learning experiments)
+- Topic Modeling: BERTopic (for transformer-based topic discovery)
 
 ## Key Features
 - Automated web scraping of research titles from Google Scholar  
 - FastAPI-powered API for querying scraped data  
 - Docker containerization for easy deployment  
 - Text cleaning & NLP preprocessing  
+- Topic modeling with BERTopic for insight discovery
+- MLflow experiment tracking for model comparison
 
 ## Future Features
 - Topic Modeling:
