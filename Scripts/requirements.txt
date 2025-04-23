@@ -9,3 +9,5 @@ transformers==4.49.0
 wordcloud==1.9.4
 fastapi==0.110.0
 uvicorn==0.29.0
+mlflow==2.21.3
+bertopic==0.17.0
