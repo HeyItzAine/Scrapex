@@ -1,0 +1,45 @@
+{
+  "__inputs": [],
+  "__requires": [
+    {"type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0"}
+  ],
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Durasi Scraping",
+      "targets": [
+        {"expr": "rate(scrapex_request_duration_seconds_bucket[5m])", "legendFormat": "Durasi"}
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+    },
+    {
+      "type": "timeseries",
+      "title": "Error vs Sukses",
+      "targets": [
+        {"expr": "rate(scrapex_requests_total{status=\"success\"}[5m])", "legendFormat": "Sukses"},
+        {"expr": "rate(scrapex_requests_total{status=\"failure\"}[5m])", "legendFormat": "Gagal"}
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+    },
+    {
+      "type": "piechart",
+      "title": "Distribusi Status Scraping",
+      "targets": [
+        {"expr": "sum(scrapex_requests_total) by (status)", "legendFormat": "{{status}}"}
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+    },
+    {
+      "type": "stat",
+      "title": "Waktu Terakhir Scraping",
+      "targets": [
+        {"expr": "scrapex_last_scrape_unixtime", "legendFormat": "Last Scrape"}
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+    }
+  ],
+  "title": "Scrapex Monitoring",
+  "schemaVersion": 30,
+  "version": 1,
+  "refresh": "15s"
+}
