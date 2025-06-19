@@ -289,6 +289,7 @@ def main():
                         default='research OR review OR paper',
                         help='Broad query to use for getting results')
     parser.add_argument('--serpapi', type=str, default=None, help='SerpApi API key (if provided, will use SerpApi for scraping)')
+    parser.add_argument('--keep-metrics', action='store_true', help='Keep Prometheus metrics server alive after scraping')
     
     args = parser.parse_args()
     
@@ -313,15 +314,24 @@ def main():
         REQUEST_COUNT.labels(status='failure').inc()
         print(f"Error: {e}")
         return 1
-    print("Scraping complete. Keeping metrics server alive for Prometheus...")
+    print("Scraping complete.")
     
-    # Keep the HTTP server alive so Prometheus can scrape
-    try:
-        while True:
-            time.sleep(10)
-    except KeyboardInterrupt:
-        print("Exiting.")
+    # Only keep metrics server alive if --keep-metrics flag is set
+    if getattr(args, 'keep_metrics', False):
+        print("Keeping metrics server alive for Prometheus...")
+        try:
+            while True:
+                time.sleep(10)
+        except KeyboardInterrupt:
+            print("Exiting.")
     return 0
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--output', type=str, default="research_titles.csv")
+    parser.add_argument('--pages', type=int, default=5)
+    parser.add_argument('--query', type=str, default="research OR review OR paper")
+    parser.add_argument('--serpapi', type=str, default=None)
+    parser.add_argument('--keep-metrics', action='store_true', help='Keep Prometheus metrics server alive after scraping')
+    args = parser.parse_args()
     exit(main())
