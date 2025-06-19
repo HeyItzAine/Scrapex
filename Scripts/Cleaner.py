@@ -19,37 +19,22 @@ logger = logging.getLogger(__name__)
 
 class DataCleaner:
     """A class to clean research paper titles using NLP and authors using regex."""
-    
-    def __init__(self, input_file, output_file=None, language='english'):
-        """
-        Initialize the data cleaner.
-        
-        Args:
-            input_file (str): Path to the input CSV file
-            output_file (str): Path to the output CSV file (default: None)
-            language (str): Language for stopwords and lemmatization (default: 'english')
-        """
+
+    def _init_(self, input_file, output_file=None, language='english'):
         self.input_file = input_file
-        
-        # If no output file is specified, create one with "_cleaned" suffix
         if output_file is None:
             base, ext = os.path.splitext(input_file)
             self.output_file = f"{base}_cleaned{ext}"
         else:
             self.output_file = output_file
-        
         self.language = language
-        
-        # Download necessary NLTK resources if not already downloaded
+
         self._download_nltk_resources()
-        
-        # Initialize NLP components
         self.stopwords = set(stopwords.words(self.language))
         self.lemmatizer = WordNetLemmatizer()
         self.punctuation = set(string.punctuation)
-        
+
     def _download_nltk_resources(self):
-        """Download necessary NLTK resources."""
         try:
             nltk.data.find('tokenizers/punkt')
             nltk.data.find('corpora/stopwords')
@@ -59,79 +44,54 @@ class DataCleaner:
             nltk.download('punkt')
             nltk.download('stopwords')
             nltk.download('wordnet')
-    
+
     def clean_title(self, text):
-        """
-        Clean a single text string using NLP techniques.
-        
-        Args:
-            text (str): Input text to clean
-        
-        Returns:
-            str: Cleaned text
-        """
-        # Convert to lowercase
-        text = text.lower()
-        
-        # Tokenize
+        text = str(text).lower()
         tokens = word_tokenize(text)
-        
-        # Remove stopwords and punctuation, and apply lemmatization
         clean_tokens = [
-            self.lemmatizer.lemmatize(token) 
-            for token in tokens 
+            self.lemmatizer.lemmatize(token)
+            for token in tokens
             if token not in self.stopwords and token not in self.punctuation
         ]
-        
-        # Join tokens back into a single string
-        clean_text = ' '.join(clean_tokens)
-        
-        return clean_text
-    
+        return ' '.join(clean_tokens)
+
     def clean_authors(self, text):
-        """
-        Clean the authors' names using regex.
-        
-        Args:
-            text (str): Input author string
-        
-        Returns:
-            str: Cleaned author names
-        """
-        # Remove journal names, extra text, and trailing commas
-        text = re.sub(r",?\s*-\s*[^,]+", "", text)  # Remove text after a dash
-        text = re.sub(r"\.{2,}", "", text)  # Remove excessive periods
-        text = re.sub(r"\s+", " ", text).strip()  # Normalize spaces
+        text = str(text)
+        text = re.sub(r",?\s*-\s*[^,]+", "", text)
+        text = re.sub(r"\.{2,}", "", text)
+        text = re.sub(r"\s+", " ", text).strip()
         return text
-    
+
     def process_csv(self):
-        """
-        Read the input CSV, clean the data, and write to the output CSV.
-        
-        Returns:
-            pandas.DataFrame: The cleaned data
-        """
         try:
-            # Read the CSV file
             logger.info(f"Reading data from {self.input_file}")
             df = pd.read_csv(self.input_file)
 
-            # Always clean Title and Authors
             if 'Title' not in df.columns or 'Authors' not in df.columns:
                 raise ValueError(f"Input CSV must contain 'Title' and 'Authors' columns. Found: {df.columns.tolist()}")
-            
-            logger.info("Cleaning titles and authors...")
-            df['CleanedTitle'] = df['Title'].apply(self.clean_title)
-            df['CleanedAuthors'] = df['Authors'].apply(self.clean_authors)
 
-            # Optionally clean Abstract
+            logger.info("Cleaning titles and authors...")
+            df['CleanedTitle'] = df['Title'].fillna("").apply(self.clean_title)
+            df['CleanedAuthors'] = df['Authors'].fillna("").apply(self.clean_authors)
+
             if 'Abstract' in df.columns:
                 logger.info("Cleaning abstracts...")
                 df['CleanedAbstract'] = df['Abstract'].fillna("").apply(self.clean_title)
 
-            # Write to output file
+            optional_columns = ['Venue', 'Publisher', 'Year', 'DOI']
+            for col in optional_columns:
+                if col not in df.columns:
+                    logger.warning(f"Optional column '{col}' not found in input CSV, skipping.")
+
+            columns_to_keep = ['Title', 'Authors', 'CleanedTitle', 'CleanedAuthors']
+            if 'Abstract' in df.columns:
+                columns_to_keep.append('CleanedAbstract')
+            for col in optional_columns:
+                if col in df.columns:
+                    columns_to_keep.append(col)
+
             logger.info(f"Writing cleaned data to {self.output_file}")
-            df.to_csv(self.output_file, index=False, quoting=csv.QUOTE_ALL)
+            df.to_csv(self.output_file, index=False, columns=columns_to_keep, quoting=csv.QUOTE_ALL)
 
             logger.info(f"Successfully cleaned {len(df)} records")
             return df
@@ -145,22 +105,22 @@ def main():
     parser.add_argument('--input', type=str, required=True, help='Input CSV file path')
     parser.add_argument('--output', type=str, default=None, help='Output CSV file path (default: input_cleaned.csv)')
     parser.add_argument('--language', type=str, default='english', help='Language for NLP processing')
-    
+
     args = parser.parse_args()
-    
+
     cleaner = DataCleaner(
         input_file=args.input,
         output_file=args.output,
         language=args.language
     )
-    
+
     try:
         cleaner.process_csv()
         print(f"Successfully cleaned data and saved to {cleaner.output_file}")
     except Exception as e:
         print(f"Error: {e}")
         return 1
-    
+
     return 0
 
 if __name__ == "__main__":
