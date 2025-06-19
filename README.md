@@ -221,54 +221,62 @@ python Scripts/BERTopic.py Data/research_titles_cleaned.csv all
 - First argument: Path to the cleaned CSV file
 - Second argument: Topic query (use "all" for all topics or specific topic number)
 
-## MLflow Experiment Tracking
+## Experiment Tracking and Monitoring
 
-Scrapex now integrates MLflow for experiment tracking, model versioning, and results visualization. This feature helps monitor and compare machine learning experiments, ensuring reproducibility and easier model management.
-
-### 1. MLflow Integration
-
-The project includes several scripts for MLflow tracking:
-
-- **`scrapex_mlflow_simple.py`**: Performs text clustering on research titles using TF-IDF and K-means while tracking parameters, metrics, and artifacts.
-- **`mlflow_experiment.py`**: A unified runner for different ML experiments with MLflow tracking.
-- **`mlflow_example.py`**: An example using Random Forest on Iris dataset to demonstrate MLflow capabilities.
-
-### 2. Tracked Components
-
-- **Parameters**: Feature counts, clustering parameters, model configurations
-- **Metrics**: Silhouette scores, cluster sizes, vocabulary statistics
-- **Artifacts**: Cluster visualizations, model files, result CSVs
-
-### 3. Running MLflow Experiments
-
-To run the text clustering with MLflow tracking:
+### MLflow Tracking
+Scrapex uses **MLflow** for experiment tracking. All model runs, parameters, and metrics are logged to the `mlruns/` directory. You can view the MLflow UI by running:
 
 ```sh
-python Scripts/scrapex_mlflow_simple.py
+python Scripts/mlflow_experiment.py --no-ui  # To run pipeline without UI
+mlflow ui --port 5000                        # To launch the MLflow UI
 ```
 
-This will:
-1. Process both research and semantic titles
-2. Perform TF-IDF vectorization
-3. Apply K-means clustering with optimal cluster determination
-4. Track all parameters, metrics, and results in MLflow
+Open [http://localhost:5000](http://localhost:5000) in your browser to explore experiment results.
 
-### 4. Viewing MLflow UI
+### Monitoring with Prometheus and Grafana
+Scrapex exposes Prometheus metrics for monitoring scraping jobs. Metrics include request counts, durations, exceptions, and last scrape time. To enable monitoring:
 
-To view experiment results and comparisons:
+1. **Start Prometheus** using the provided `prometheus.yml` configuration.
+2. **Start Grafana** and import the dashboard from `grafana/dashboard.json`.
+3. The dashboard visualizes scraping duration, success/failure rates, status distribution, and last scrape time.
 
-```sh
-mlflow ui
-```
+#### Example Prometheus Metrics
+- `scrapex_requests_total{status="success"}`: Number of successful requests
+- `scrapex_requests_total{status="failure"}`: Number of failed requests
+- `scrapex_request_duration_seconds`: Scraping duration histogram
+- `scrapex_last_scrape_unixtime`: Last scrape timestamp
 
-Then open http://localhost:5000 in your browser to access the MLflow interface.
+#### Example Grafana Panels
+- **Durasi Scraping**: Time series of scraping durations
+- **Error vs Sukses**: Success vs failure rates
+- **Distribusi Status Scraping**: Pie chart of request status
+- **Waktu Terakhir Scraping**: Last scrape time
 
-### 5. MLflow UI Features
+## Data Version Control (DVC)
+Scrapex recommends using **DVC** for data versioning and reproducibility. DVC tracks changes to datasets and model artifacts, enabling consistent experiments.
 
-- **Experiments List**: See all tracked experiments
-- **Run Details**: View parameters, metrics, and artifacts for each run
-- **Metrics Comparison**: Compare results across different runs
-- **Artifacts Viewer**: Visualize and download experiment outputs
+### Basic DVC Workflow
+1. **Initialize DVC** (run once):
+   ```sh
+   dvc init
+   ```
+2. **Track a data file**:
+   ```sh
+   dvc add Data/research_titles.csv
+   dvc add Data/semantic_titles.csv
+   ```
+3. **Commit DVC files**:
+   ```sh
+   git add Data/*.dvc .gitignore
+   git commit -m "Track data with DVC"
+   ```
+4. **Push data to remote storage** (optional):
+   ```sh
+   dvc remote add -d myremote <remote-url>
+   dvc push
+   ```
+
+For more details, see the [DVC documentation](https://dvc.org/doc/start).
 
 ## Tools & Technologies
 This project integrates various tools and technologies to facilitate data processing, model training, and deployment:

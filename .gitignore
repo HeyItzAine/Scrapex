@@ -1,2 +1,5 @@
 mlruns/
 tempCodeRunnerFile.python
+Data/
+arxiv_papers.csv
+Scripts/arXivTest.py
