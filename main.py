@@ -3,7 +3,7 @@ import os
 # Step 1: Scrape research papers
 os.system("python scripts/scrapex.py")
 
-os.system('python scripts/Semantic_Scrapex.py --query "research review paper" --total 1000 --per_page 50 /--delay 2')
+os.system('python scripts/Semantic_Scrapex.py --queries "Explainable AI,Quantum Machine Learning,Sustainable Energy Grids,CRISPR Gene Editing,Federated Learning Security,Neuroplasticity Brain Health,Advanced Materials Additive Manufacturing,Climate Change Adaptation Strategies,Humanoid Robotics Dexterity,Cybersecurity AI Threats" --total 10000 --initial_delay 1 --max_retries 100')
 
 # Step 2: Clean data
 os.system("python scripts/cleaner.py --input data/research_titles.csv --output data/research_titles_cleaned.csv")

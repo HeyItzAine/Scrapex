@@ -11,7 +11,33 @@ from dotenv import load_dotenv
 from prometheus_client import Counter, Histogram, Gauge, start_http_server
 
 load_dotenv("../apitoken.env")
-APIKEY = os.getenv("SERPAPIKEY")
+# Collect all SerpAPI keys from environment
+SERPAPI_KEYS = []
+key_index = 1
+while True:
+    key = os.getenv(f"SERPAPIKEY{key_index}")
+    if key:
+        SERPAPI_KEYS.append(key)
+        key_index += 1
+    else:
+        break
+
+if not SERPAPI_KEYS:
+    SERPAPI_KEYS = [os.getenv("SERPAPIKEY")]  # Fallback to old key name
+
+class KeyRotator:
+    def __init__(self, keys):
+        self.keys = keys
+        self.current = 0
+        
+    def get_next_key(self):
+        if not self.keys:
+            return None
+        key = self.keys[self.current]
+        self.current = (self.current + 1) % len(self.keys)
+        return key
+
+key_rotator = KeyRotator(SERPAPI_KEYS)
 
 # Configure logging
 logging.basicConfig(
@@ -143,10 +169,15 @@ class GoogleScholarScraperRequests:
             logger.warning(f"First 500 chars of HTML for page {page_number + 1}:\n{response.text[:500]}")
         return papers
     
-    def fetch_page_serpapi(self, query, page_number, api_key):
+    def fetch_page_serpapi(self, query, page_number):
         """
-        Fetch a page of Google Scholar results using SerpApi.
+        Fetch a page of Google Scholar results using SerpApi with key rotation.
         """
+        api_key = key_rotator.get_next_key()
+        if not api_key:
+            logger.error("No valid SerpApi key available")
+            return []
+
         params = {
             "engine": "google_scholar",
             "q": query,
@@ -170,10 +201,10 @@ class GoogleScholarScraperRequests:
             logger.error(f"SerpApi error on page {page_number + 1}: {e}")
             return []
 
-    def scrape(self, broad_query="research OR review OR paper", use_serpapi=False, serpapi_key=None):
+    def scrape(self, broad_query="research OR review OR paper", use_serpapi=False):
         """
         Main method to scrape Google Scholar for research titles and authors.
-        If use_serpapi is True and serpapi_key is provided, use SerpApi for scraping.
+        If use_serpapi is True, use SerpApi for scraping with key rotation.
         Prometheus metrics are updated for each page: request count, duration, errors, and last scrape time.
         """
         formatted_query = broad_query.replace(' ', '+')
@@ -181,11 +212,11 @@ class GoogleScholarScraperRequests:
         success_count = 0
         fail_count = 0
         exception_count = 0
-        if use_serpapi and serpapi_key:
+        if use_serpapi:
             for page_number in range(self.max_pages):
                 page_start = time.time()
                 try:
-                    page_papers = self.fetch_page_serpapi(broad_query, page_number, serpapi_key)
+                    page_papers = self.fetch_page_serpapi(broad_query, page_number)
                     duration = time.time() - page_start
                     REQUEST_DURATION.observe(duration)
                     if not page_papers:
@@ -205,7 +236,6 @@ class GoogleScholarScraperRequests:
                     REQUEST_COUNT.labels(status='failure').inc()
                     exception_count += 1
             total_duration = time.time() - total_scrape_start
-            # Custom gauge for total scrape time
             if hasattr(self, 'SCRAPEX_TOTAL_SCRAPE_TIME'):
                 self.SCRAPEX_TOTAL_SCRAPE_TIME.set(total_duration)
             self.save_to_csv()
@@ -253,7 +283,7 @@ def main():
 
     parser.add_argument('--output', type=str, default=os.path.join(DATA_DIR, "research_titles.csv"))
 
-    parser.add_argument('--pages', type=int, default=10,
+    parser.add_argument('--pages', type=int, default=50,
                         help='Maximum number of pages to scrape')
     parser.add_argument('--query', type=str, 
                         default='research OR review OR paper',
@@ -270,9 +300,9 @@ def main():
     try:
         start_http_server(8000)  # Expose Prometheus metrics on port 8000
         start_time = time.time()
-        serpapi_key = args.serpapi or APIKEY
-        use_serpapi = serpapi_key is not None
-        papers = scraper.scrape(broad_query=args.query, use_serpapi=use_serpapi, serpapi_key=serpapi_key)
+        # If we have any SerpAPI keys available, use SerpAPI
+        use_serpapi = len(SERPAPI_KEYS) > 0
+        papers = scraper.scrape(broad_query=args.query, use_serpapi=use_serpapi)
         duration = time.time() - start_time
         REQUEST_COUNT.labels(status='success').inc()
         REQUEST_DURATION.observe(duration)
@@ -284,7 +314,7 @@ def main():
         print(f"Error: {e}")
         return 1
     print("Scraping complete. Keeping metrics server alive for Prometheus...")
-
+    
     # Keep the HTTP server alive so Prometheus can scrape
     try:
         while True:
